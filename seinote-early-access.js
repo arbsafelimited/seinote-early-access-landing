@@ -220,43 +220,79 @@
     });
   }
 
+  const GOOGLE_ADS_CONVERSION_ID = "AW-18244315052";
+  const GOOGLE_ADS_CONVERSION_LABEL = "mAuXCN-CleAcEKzPyPtD";
+  const GOOGLE_ADS_CONVERSION_SEND_TO = "AW-18244315052/mAuXCN-CleAcEKzPyPtD";
+  const APPLY_CONVERSION_FALLBACK_MS = 1500;
+
+  function logAdsDiagnostic(message, detail = "") {
+    if (detail) {
+      console.info(`[Seinote Ads] ${message}`, detail);
+      return;
+    }
+    console.info(`[Seinote Ads] ${message}`);
+  }
+
   function reportApplyConversionAndRedirect(link) {
-    if (!link || link.dataset.conversionInFlight === "true") return false;
+    if (!link) {
+      logAdsDiagnostic("Apply conversion blocked", "missing link");
+      return false;
+    }
+    if (link.dataset.conversionInFlight === "true") {
+      logAdsDiagnostic("Apply conversion blocked", "conversion already in flight");
+      return false;
+    }
     link.dataset.conversionInFlight = "true";
     const destinationUrl = link.href;
     let redirected = false;
     const redirect = () => {
       if (redirected) return;
       redirected = true;
+      logAdsDiagnostic("Redirecting", destinationUrl);
       window.location.href = destinationUrl;
     };
 
+    logAdsDiagnostic("Apply clicked", destinationUrl);
     track("apply_click", { destination_url: destinationUrl });
 
     if (typeof window.gtag !== "function") {
+      logAdsDiagnostic("gtag unavailable", "fallback redirect");
       redirect();
       return false;
     }
 
-    window.setTimeout(redirect, 900);
+    logAdsDiagnostic("gtag available");
+    logAdsDiagnostic("Sending conversion", GOOGLE_ADS_CONVERSION_SEND_TO);
+    window.setTimeout(() => {
+      logAdsDiagnostic("Conversion callback timeout", `${APPLY_CONVERSION_FALLBACK_MS}ms fallback`);
+      redirect();
+    }, APPLY_CONVERSION_FALLBACK_MS);
     window.gtag("event", "conversion", {
-      send_to: "AW-18244315052/mAuXCN-CleAcEKzPyPtD",
+      send_to: GOOGLE_ADS_CONVERSION_SEND_TO,
       value: 1.0,
       currency: "BRL",
-      event_callback: redirect,
+      event_callback: () => {
+        logAdsDiagnostic("Conversion callback");
+        redirect();
+      },
     });
     return false;
   }
+
+  window.gtag_report_conversion = function gtagReportConversion(url) {
+    return reportApplyConversionAndRedirect({ href: url || "https://seinote.com/login", dataset: {} });
+  };
 
   document.querySelectorAll("[data-track]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (node.dataset.track === "primary_cta") {
         event.preventDefault();
+        event.stopImmediatePropagation();
         reportApplyConversionAndRedirect(node);
         return;
       }
       track(`early_access_${node.dataset.track}_click`, { destination_url: node.href || "" });
-    });
+    }, { capture: true });
   });
 
   document.querySelectorAll("details").forEach((node) => {

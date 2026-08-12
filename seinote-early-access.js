@@ -1,6 +1,11 @@
 (function () {
   const params = new URLSearchParams(window.location.search);
   const utm = Object.fromEntries(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].map((key) => [key, params.get(key) || ""]));
+  const googleClickIds = ["gclid", "gbraid", "wbraid"].reduce((ids, key) => {
+    const value = params.get(key);
+    if (value) ids[key] = value;
+    return ids;
+  }, {});
   const campaign = utm.utm_campaign || "seinote_early_access";
   const variant = ["less_admin_more_care", "built_by_listening", "seinote_early_access"].includes(campaign) ? campaign : "seinote_early_access";
   const translations = {
@@ -192,12 +197,34 @@
 
   function track(eventName, properties = {}) {
     const events = JSON.parse(sessionStorage.getItem("seinote_early_access_events") || "[]");
-    events.push({ event: eventName, properties: { ...utm, landing_variant: variant, ...properties }, timestamp: new Date().toISOString() });
+    const payload = { ...utm, ...googleClickIds, landing_variant: variant, ...properties };
+    events.push({ event: eventName, properties: payload, timestamp: new Date().toISOString() });
     sessionStorage.setItem("seinote_early_access_events", JSON.stringify(events.slice(-60)));
+    if (typeof window.gtag === "function") {
+      window.gtag("event", eventName, payload);
+    }
+  }
+
+  function preserveAttributionOnSignupLinks() {
+    const attribution = new URLSearchParams();
+    Object.entries({ ...utm, ...googleClickIds }).forEach(([key, value]) => {
+      if (value) attribution.set(key, value);
+    });
+    if (!attribution.toString()) return;
+    document.querySelectorAll('a[href^="https://seinote.com/login"]').forEach((link) => {
+      const url = new URL(link.href);
+      attribution.forEach((value, key) => {
+        if (!url.searchParams.has(key)) url.searchParams.set(key, value);
+      });
+      link.href = url.toString();
+    });
   }
 
   document.querySelectorAll("[data-track]").forEach((node) => {
-    node.addEventListener("click", () => track(`early_access_${node.dataset.track}_click`));
+    node.addEventListener("click", () => {
+      const eventName = node.dataset.track === "primary_cta" ? "apply_click" : `early_access_${node.dataset.track}_click`;
+      track(eventName, { destination_url: node.href || "" });
+    });
   });
 
   document.querySelectorAll("details").forEach((node) => {
@@ -230,6 +257,7 @@
 
   const savedLanguage = localStorage.getItem("seinote_landing_language") || "en";
   setLanguage(savedLanguage);
+  preserveAttributionOnSignupLinks();
 
   document.querySelector("[data-language-toggle]")?.addEventListener("click", () => {
     const current = localStorage.getItem("seinote_landing_language") || "en";
@@ -247,5 +275,5 @@
     window.setTimeout(hideIntro, reduceMotion ? 120 : 1450);
   }
 
-  track("early_access_landing_view", { path: window.location.pathname });
+  track("landing_page_view", { path: window.location.pathname });
 })();

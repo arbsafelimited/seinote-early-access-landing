@@ -18,6 +18,9 @@ Static landing page for the Seinote Early Access campaign.
 ## Google Ads Tracking
 
 - Google tag ID: `AW-18244315052`
+- Conversion label: `mAuXCN-CleAcEKzPyPtD`
+- Temporary primary conversion: `apply_click`
+- Conversion send_to: `AW-18244315052/mAuXCN-CleAcEKzPyPtD`
 - Landing diagnostic events:
   - `landing_page_view`
   - `apply_click`
@@ -26,7 +29,7 @@ Static landing page for the Seinote Early Access campaign.
   - `gbraid`
   - `wbraid`
   - UTM parameters
-- Primary conversion is intentionally pending until the Google Ads Conversion Label is provided and the real account-created backend confirmation point is instrumented in the Seinote signup application.
+- Account-created conversion is pending until the real account-created backend confirmation point is instrumented in the Seinote signup application.
 
 ## Files
 

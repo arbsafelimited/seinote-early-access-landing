@@ -220,10 +220,42 @@
     });
   }
 
+  function reportApplyConversionAndRedirect(link) {
+    if (!link || link.dataset.conversionInFlight === "true") return false;
+    link.dataset.conversionInFlight = "true";
+    const destinationUrl = link.href;
+    let redirected = false;
+    const redirect = () => {
+      if (redirected) return;
+      redirected = true;
+      window.location.href = destinationUrl;
+    };
+
+    track("apply_click", { destination_url: destinationUrl });
+
+    if (typeof window.gtag !== "function") {
+      redirect();
+      return false;
+    }
+
+    window.setTimeout(redirect, 900);
+    window.gtag("event", "conversion", {
+      send_to: "AW-18244315052/mAuXCN-CleAcEKzPyPtD",
+      value: 1.0,
+      currency: "BRL",
+      event_callback: redirect,
+    });
+    return false;
+  }
+
   document.querySelectorAll("[data-track]").forEach((node) => {
-    node.addEventListener("click", () => {
-      const eventName = node.dataset.track === "primary_cta" ? "apply_click" : `early_access_${node.dataset.track}_click`;
-      track(eventName, { destination_url: node.href || "" });
+    node.addEventListener("click", (event) => {
+      if (node.dataset.track === "primary_cta") {
+        event.preventDefault();
+        reportApplyConversionAndRedirect(node);
+        return;
+      }
+      track(`early_access_${node.dataset.track}_click`, { destination_url: node.href || "" });
     });
   });
 

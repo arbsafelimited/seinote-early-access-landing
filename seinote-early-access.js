@@ -1,7 +1,7 @@
 (function () {
   const params = new URLSearchParams(window.location.search);
   const utm = Object.fromEntries(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].map((key) => [key, params.get(key) || ""]));
-  const googleClickIds = ["gclid", "gbraid", "wbraid"].reduce((ids, key) => {
+  const clickIds = ["fbclid", "gclid", "gbraid", "wbraid"].reduce((ids, key) => {
     const value = params.get(key);
     if (value) ids[key] = value;
     return ids;
@@ -197,7 +197,7 @@
 
   function track(eventName, properties = {}) {
     const events = JSON.parse(sessionStorage.getItem("seinote_early_access_events") || "[]");
-    const payload = { ...utm, ...googleClickIds, landing_variant: variant, ...properties };
+    const payload = { ...utm, ...clickIds, landing_variant: variant, ...properties };
     events.push({ event: eventName, properties: payload, timestamp: new Date().toISOString() });
     sessionStorage.setItem("seinote_early_access_events", JSON.stringify(events.slice(-60)));
     if (typeof window.gtag === "function") {
@@ -205,9 +205,22 @@
     }
   }
 
+  function persistAttribution() {
+    const attribution = {};
+    Object.entries({ ...utm, ...clickIds }).forEach(([key, value]) => {
+      if (value) attribution[key] = value;
+    });
+    if (!Object.keys(attribution).length) return;
+    localStorage.setItem("seinote_attribution", JSON.stringify({
+      ...attribution,
+      captured_at: new Date().toISOString(),
+      landing_url: window.location.href,
+    }));
+  }
+
   function preserveAttributionOnSignupLinks() {
     const attribution = new URLSearchParams();
-    Object.entries({ ...utm, ...googleClickIds }).forEach(([key, value]) => {
+    Object.entries({ ...utm, ...clickIds }).forEach(([key, value]) => {
       if (value) attribution.set(key, value);
     });
     if (!attribution.toString()) return;
@@ -325,6 +338,7 @@
 
   const savedLanguage = localStorage.getItem("seinote_landing_language") || "en";
   setLanguage(savedLanguage);
+  persistAttribution();
   preserveAttributionOnSignupLinks();
 
   document.querySelector("[data-language-toggle]")?.addEventListener("click", () => {

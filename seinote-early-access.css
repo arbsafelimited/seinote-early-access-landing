@@ -373,6 +373,42 @@ input:focus, select:focus, textarea:focus { outline: 3px solid hsl(var(--ring) /
 }
 .footer img { width: 120px; }
 .footer a { font-weight: 800; color: hsl(var(--primary)); }
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.privacy-hero {
+  min-height: auto;
+  padding-bottom: 34px;
+}
+.privacy-hero h1 {
+  font-size: clamp(44px, 6vw, 70px);
+}
+.privacy-content {
+  display: grid;
+  gap: 16px;
+  padding-top: 18px;
+}
+.privacy-content article {
+  padding: clamp(22px, 3vw, 34px);
+}
+.privacy-content h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 3vw, 34px);
+}
+.privacy-content p {
+  margin: 0 0 12px;
+  color: hsl(var(--foreground) / .76);
+}
+.privacy-content p:last-child {
+  margin-bottom: 0;
+}
+.privacy-content a {
+  color: hsl(var(--primary));
+  font-weight: 800;
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -400,6 +436,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid hsl(var(--ring) /
   .section { padding: 56px 0; }
   h1 { font-size: clamp(38px, 11vw, 54px); }
   .footer { flex-direction: column; align-items: flex-start; }
+  .footer-links { align-items: flex-start; }
 }
 
 @media (max-width: 520px) {

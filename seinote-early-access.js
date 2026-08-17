@@ -237,6 +237,7 @@
   const GOOGLE_ADS_CONVERSION_LABEL = "mAuXCN-CleAcEKzPyPtD";
   const GOOGLE_ADS_CONVERSION_SEND_TO = "AW-18244315052/mAuXCN-CleAcEKzPyPtD";
   const APPLY_CONVERSION_FALLBACK_MS = 1500;
+  const META_PIXEL_ID = String(window.SEINOTE_META_PIXEL_ID || "").trim();
 
   function logAdsDiagnostic(message, detail = "") {
     if (detail) {
@@ -292,6 +293,41 @@
     return false;
   }
 
+  function initializeMetaPixel() {
+    if (!META_PIXEL_ID) {
+      console.info("[Seinote Meta] Pixel disabled: META_PIXEL_ID missing");
+      return;
+    }
+    if (window.__seinoteMetaPageViewSent === true) return;
+    if (typeof window.fbq !== "function") {
+      (function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = true;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = true;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+    }
+    window.fbq("init", META_PIXEL_ID);
+    window.fbq("track", "PageView");
+    window.__seinoteMetaPageViewSent = true;
+    console.info("[Seinote Meta] PageView sent");
+  }
+
+  window.seinoteTrackCompleteRegistration = function seinoteTrackCompleteRegistration() {
+    console.warn("[Seinote Meta] CompleteRegistration blocked on landing. Fire only after real account creation in seinote.com signup.");
+    return false;
+  };
+
   window.gtag_report_conversion = function gtagReportConversion(url) {
     return reportApplyConversionAndRedirect({ href: url || "https://seinote.com/login", dataset: {} });
   };
@@ -337,6 +373,7 @@
   }
 
   const savedLanguage = localStorage.getItem("seinote_landing_language") || "en";
+  initializeMetaPixel();
   setLanguage(savedLanguage);
   persistAttribution();
   preserveAttributionOnSignupLinks();
